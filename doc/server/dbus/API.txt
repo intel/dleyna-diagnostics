@@ -1,0 +1,315 @@
+API
+---
+
+Dleyna-diagnostics-service is a middleware component.  It is designed to be
+launched by d-Bus activation when needed.  It automatically shuts down when the
+last of its clients quits or releases its connection.
+
+Dleyna-diagnostics-service currently connects to the d-Bus session bus,
+although this may change in the future.  It exposes different types of objects:
+
+1. A Manager object.  There is only ever a single instance of this object.
+It can be used to retrieve a list of the diagnostics device on the local area
+network.  It is also used to perform certain server independent tasks.
+
+2. Device objects.  One separate object is exposed for each device available on
+the LAN.  These objects expose interfaces that allow clients to execute
+diagnostics operations on the device.
+
+
+The remainder of this document will describe the d-Bus objects listed above and
+the interfaces they support.
+
+
+The Manager Object:
+-------------------
+
+There is only ever a single instance of this object.  The manager
+object exposes two d-Bus interfaces:
+1 - com.intel.dLeynaDiagnostics.Manager.
+2 - org.freedesktop.DBus.Properties.
+
+
+com.intel.dLeynaDiagnostics.Manager
+----------------------------------
+
+Methods:
+--------
+
+Descriptions of the com.intel.dLeynaDiagnostics.Manager interface methods along
+with their d-Bus signatures are given below.
+
+GetDevices() -> ao Devices
+
+GetDevices takes no parameters and returns an array of d-Bus object paths.
+Each of these paths reference a d-Bus object that represents a single device
+with diagnostics capabilities.
+
+GetVersion() -> s Version
+
+Returns the version number of dleyna-diagnostics-service
+
+Release()
+
+Indicates to dleyna-diagnostics-service that a client is no longer interested
+in its services.  Internally, dleyna-diagnostics-service maintains a reference
+count.  This reference count is increased when a new client connects.
+It is decreased when a client quits.  When the reference count reaches
+0, dleyna-diagnostics-service exits.  A call to Release also decreases the
+reference count.  Clients should call this method if they intend to
+keep running but they have no immediate plans to invoke any of
+dleyna-diagnostics-service's methods. This allows dleyna-diagnostics-service to
+quit, freeing up system resources.
+
+Rescan() -> void
+
+Forces a rescan for Device on the local area network.  This is useful to
+detect Devices which have shut down without sending BYE messages or to
+discover new devices which for some reason were not detected when either
+they, or the device on which dLeyna-diagnostics runs, was started or joined
+the network.
+
+
+Properties:
+-----------
+
+The com.intel.dLeynaRenderer.Manager interface exposes information via a number
+of d-Bus properties.  These properties are described below:
+
+|------------------------------------------------------------------------------|
+|     Name          |   Type    |m/o*|              Description                |
+|------------------------------------------------------------------------------|
+| NeverQuit         |     b     | m  | True if the service always stay in      |
+|                   |           |    | memory running.  False if the service   |
+|                   |           |    | quit when the last client disconnects.  |
+|------------------------------------------------------------------------------|
+| WhiteListEntries  |     as    | m  | The list of entries that compose the    |
+|                   |           |    | white list used to filter the networks. |
+|                   |           |    | An Entry could be an interface name     |
+|                   |           |    | (eth0), an ip address (127.0.0.1) or    |
+|                   |           |    | a SSID (MyWiFi)                         |
+|------------------------------------------------------------------------------|
+| WhiteListEnabled  |     b     | m  | True if the Network Filtering is active.|
+|------------------------------------------------------------------------------|
+
+A org.freedesktop.DBus.Properties.PropertiesChanged signal is emitted when
+these properties change.
+These properties can be changed using the Set() method of
+org.freedesktop.DBus.Properties interface.
+
+
+Signals:
+--------
+
+The com.intel.dLeynaDiagnostics.Manager interface also exposes two signals.
+
+FoundDevice(o)
+
+Is generated whenever a new diagnostics device is detected on the local area
+network.  The signal contains the path of the newly discovered device.
+
+LostDevice(o)
+
+Is generated whenever a diagnostics device is shutdown.  The signal contains
+the path of the device which has just been shutdown.
+
+
+The Device Objects:
+-------------------
+
+Dleyna-diagnostics-service exposes a separate d-Bus object for each Device it
+detects on the LAN.  These objects serve two purposes.
+
+1. They allow the client to retrieve information about the device, such
+as its name, the URL of its icon, its manufacturer, etc.
+
+2. They allow the client execute and control diagnostics operations on the
+device.
+
+Each device object exposes a com.intel.dLeynaDiagnostics.Device interface.
+
+
+com.intel.dLeynaDiagnostics.Device:
+-----------------------------------
+
+The com.intel.dLeynaDiagnostics.Device interface exposes information about the
+diagnostics device via a number of d-Bus properties.
+These properties are described below:
+
+|------------------------------------------------------------------------------|
+|     Name          |   Type    | m/o |              Description               |
+|------------------------------------------------------------------------------|
+| DeviceType        |     s     |  m  | The UPnP type of the device, e.g.,     |
+|                   |           |     | urn:schemas-upnp-org:device:\          |
+|                   |           |     | MediaServer:1                          |
+|------------------------------------------------------------------------------|
+| UDN               |     s     |  m  | The Unique Device Name of the device.  |
+|------------------------------------------------------------------------------|
+| FriendlyName      |     s     |  m  | The friendly name of the device.       |
+-------------------------------------------------------------------------------|
+| IconURL           |     s     |  o  | A URL pointing to an icon that         |
+|                   |           |     | graphically identifies the device.     |
+|------------------------------------------------------------------------------|
+| Manufacturer      |     s     |  m  | A string identifying the manufacturer  |
+|                   |           |     | of the device.                         |
+|------------------------------------------------------------------------------|
+| ManufacturerUrl   |     s     |  o  | A URL pointing to the manufacturer's   |
+|                   |           |     | web site.                              |
+|------------------------------------------------------------------------------|
+| ModelDescription  |     s     |  o  | A description of the device.           |
+|------------------------------------------------------------------------------|
+| ModelName         |     s     |  m  | The model name of the device.          |
+|------------------------------------------------------------------------------|
+| ModelNumber       |     s     |  o  | The device's version number.           |
+|------------------------------------------------------------------------------|
+| SerialNumber      |     s     |  o  | The device's serial number.            |
+|------------------------------------------------------------------------------|
+| PresentationURL   |     s     |  o  | The presentation URL of the device,    |
+|                   |           |     | i.e., a link to it's HTML management   |
+|                   |           |     | interface.                             |
+|------------------------------------------------------------------------------|
+| Status            |     s     |  m  | The Parent Device Status, possible     |
+|                   |           |     | values are OK, Warning, Error or Fatal.|
+|------------------------------------------------------------------------------|
+| StatusChangedDate |     s     |  m  | date/time at which the Parent Device   |
+|                   |           |     | started up or its status last changed. |
+|------------------------------------------------------------------------------|
+| StatusInfo        |     as    |  o  | vendor-specific strings that can give  |
+|                   |           |     | additional information about the Parent|
+|                   |           |     | Device status.                         |
+|------------------------------------------------------------------------------|
+| TestIDs           |     au    |  o  | A list of test IDs successfully        |
+|                   |           |     | requested and not yet deleted.         |
+|------------------------------------------------------------------------------|
+| ActiveTestIDs     |     au    |  o  | A list of test IDs successfully        |
+|                   |           |     | requested and not yet completed or     |
+|                   |           |     | canceled.                              |
+|------------------------------------------------------------------------------|
+
+
+All of the above properties are static with except Status, StatusChangedDate,
+StatusInfo, TestIDs and ActiveTestIDs.
+A org.freedesktop.DBus.Properties.PropertiesChanged signal is emitted when
+these properties change.
+
+Methods:
+--------
+
+The com.intel.dLeynaDiagnostics.Device interface currently exposes below methods:
+
+GetTestInfo(u TestID) -> (s TestType, s TestState)
+
+Returns the Type and State of a successfully requested test.
+Possible values for TestType are NSLookup, Ping, Traceroute.
+Possible for TestState are Requested, InProgress, Canceled, Completed.
+
+CancelTest(u TestID) -> void
+
+Cancels a successfully requested test.
+
+Ping(s Host, u RepeatCount, u Interval, u DataBlockSize, u DSCP) -> u TestID
+
+Requests an IP-layer ping test by sending an ICMP packet to Host.
+Operation is repeated RepeatCount times, with a millisecond interval between
+each packet sending.
+The DataBlockSize is the size of each packet's data block.
+DSCP is the DiffServ Code Point value in each packet's IP header.
+A value of zero for RepeatCount, Interval, DataBlockSize and DSCP parameters
+means default.
+A TestID is returned as result of the method invocation.
+
+GetPingResult(u TestID) -> (s TestStatus, s TestInfo, u SuccessCount,
+                            u FailureCount, u AvgResponseTime,
+                            u MinResponseTime, u MaxResponseTime)
+
+Returns the results of a completed IP-layer ping test.
+TestStatus is a string representing the result of the test (Success,
+Error_CannotResolveHostName, Error_Internal, Error_Other), TestInfo is a string
+that can contain additional information about the test result, successful and failed
+ping count, average, minimum and maximum response time in milliseconds of
+successful pings (zero if none).
+
+NSLookup(s HostName, s DNSServer, u RepeatCount, u interval) -> u TestID
+
+Requests an IP-layer DNS lookup. Operation is repeated RepeatCount times, with
+a millisecond Interval. A value of zero for RepeatCount, Interval means default.
+A TestID is returned as result of the method invocation.
+
+GetNSLookupResult(u TestID) -> (s TestStatus, s TestInfo, u SuccessCount,
+                                a(sssassu) NSLookupResult)
+
+Returns the results of a completed IP-layer DNS lookup test.
+These results are a string representing the result of the test (Success,
+Error_DNSServerNotResolved, Error_Internal, Error_Other), a string that can
+contain additional information about the test result. successful DNS lookups
+count and the list of detailed results. NSLookupResult are detailed results
+signature (ssassu) is composed of a result status string (Success,
+Error_DNSServerNotResolved, Error_Internal, Error_Other), an answer type string
+(None, Authoritative or NonAuthoritative), a hostname string, an array of
+ip addresses, the DNS server IP address and the response time in milliseconds.
+
+Traceroute(s Host, u Timeout, u DataBlockSize, u MaxHopCount, u DSCP)
+-> u TestID
+
+Requests an IP-layer trace-route test to find a route to host.
+a reply timeout in milliseconds, a data block size, a maximum hop count and
+a DiffServ Code Point value can be specified (zero for default).
+A TestID is returned as result of the method invocation.
+
+GetTracerouteResult(u TestID) -> (s TestStatus, s TestInfo, u ResponseTime,
+                                  as HopHosts)
+
+Returns the results of a completed IP-layer trace-route test.
+These results are a string representing the result of the test (Success,
+Error_CannotResolveHostName, Error_MaxHopCountExceeded, Error_Internal,
+Error_Other), a string that can contain additional information about the test
+result, the average response time in milliseconds for the for the messages that
+actually reached the host and HopHosts, an array of the hosts IP addresses along
+the discovered route.
+
+Cancel() -> void
+
+Cancels all requests a client has outstanding on that device.
+
+GetIcon(s RequestedMimeType, s Resolution) -> (ay Bytes, s MimeType)
+
+Returns the device icon bytes and mime type according to
+the RequestedMimeType and Resolution parameters.
+Both RequestedMimeType and Resolution parameters are currently
+reserved for future use and should be set as an empty string.
+
+
+Example:
+--------
+
+Here is some example code in python that enumerates all the diagnostics devices
+present on the network and prints their names and the paths of the d-Bus objects
+that represent them, to the screen.
+
+import dbus
+
+bus = dbus.SessionBus()
+manager = dbus.Interface(bus.get_object('com.intel.dleyna-diagnostics',
+                                        '/com/intel/dLeynaDiagnostics'),
+                         'com.intel.dLeynaDiagnostics.Manager')
+for path in manager.GetDevices():
+    device = dbus.Interface(bus.get_object(
+                            'com.intel.dleyna-diagnostics', path),
+                            'org.freedesktop.DBus.Properties')
+    deviceName = device.Get("", "DisplayName")
+    print '{0:<30}{1:<30}'.format(deviceName , path)
+
+
+Running this code on a LAN with 3 diagnostics devices produces the following
+output:
+
+Blue Media Server              /com/intel/dLeynaDiagnostics/device/3
+White Media Renderer           /com/intel/dLeynaDiagnostics/device/1
+Yellow Media Server            /com/intel/dLeynaDiagnostics/device/4
+
+References:
+-----------
+
+1) BasicManagement:2 Service Template, version 1.01 (http://www.upnp.org/)
+2) DLNA Diagnostics Guidelines, version 1.0 (http://www.dlna.org/)
+
