@@ -225,7 +225,6 @@ AC_SUBST([with_log_type])
 
 AC_CONFIG_FILES([Makefile						\
 		 libdleyna/diagnostics/Makefile				\
-		 libdleyna/diagnostics/dleyna-diagnostics-1.0.pc		\
 		 libdleyna/diagnostics/dleyna-diagnostics-service.conf	\
 		 server/dleyna-diagnostics-service-1.0.pc		\
 		 server/Makefile					\

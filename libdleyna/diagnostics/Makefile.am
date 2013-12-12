@@ -1,5 +1,3 @@
-libdleyna_diagnosticsincdir = $(includedir)/dleyna-1.0/libdleyna/diagnostics
-
 DLEYNA_DIAGNOSTICS_VERSION = 1:0:0
 
 AM_CFLAGS =	$(GLIB_CFLAGS)				\
@@ -14,6 +12,8 @@ AM_CFLAGS =	$(GLIB_CFLAGS)				\
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
 pkglib_LTLIBRARIES = libdleyna-diagnostics-1.0.la
+
+libdleyna_diagnosticsincdir = $(includedir)/dleyna-1.0/libdleyna/diagnostics
 
 libdleyna_diagnosticsinc_HEADERS = 	control-point-diagnostics.h
 
@@ -49,9 +49,6 @@ MAINTAINERCLEANFILES =	Makefile.in		\
 
 sysconf_DATA = dleyna-diagnostics-service.conf
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = dleyna-diagnostics-1.0.pc
-
 EXTRA_DIST = 	$(sysconf_DATA)			\
 		async.h				\
 		device.h			\
@@ -62,8 +59,8 @@ EXTRA_DIST = 	$(sysconf_DATA)			\
 		upnp.h				\
 		xml-util.h
 
-CLEANFILES = $(pkgconfig_DATA) dleyna-diagnostics-service.conf
-DISTCLEANFILES = $(pkgconfig_DATA) dleyna-diagnostics-service.conf
+CLEANFILES = dleyna-diagnostics-service.conf
+DISTCLEANFILES = dleyna-diagnostics-service.conf
 
 maintainer-clean-local:
 	rm -rf build-aux
